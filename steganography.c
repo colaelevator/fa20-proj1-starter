@@ -13,21 +13,47 @@
 **
 **************************************************************************/
 
+#include <complex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include "imageloader.h"
 
-//Determines what color the cell at the given row/col should be. This should not affect Image, and should allocate space for a new Color.
+//Determines what color the cell at the given row/col should be.
+//This should not affect Image, and should allocate space for a new Color.
 Color *evaluateOnePixel(Image *image, int row, int col)
 {
-	//YOUR CODE HERE
+	Color* result = (Color*)malloc(sizeof(Color*));
+	if (image->image[row][col].B % 2 == 0)
+	{
+		result->R = result->G = result->B = 0;
+		return result;
+	}
+	result->R = result->G = result->B = 255;
+	return result;
 }
 
 //Given an image, creates a new image extracting the LSB of the B channel.
 Image *steganography(Image *image)
 {
-	//YOUR CODE HERE
+	Image *result = (Image*)malloc(sizeof(Image));
+	result->rows = image->rows;
+	result->cols = image->cols;
+	result->image = (Color**)malloc(sizeof(Color*) * image->rows);
+	for (int i = 0; i < image->rows; i++)
+	{
+		result->image[i] = (Color*)malloc(sizeof(Color) * image->cols);
+	}
+	for (int i = 0; i < image->rows; i++)
+	{
+		for (int j = 0; j < image->cols; j++)
+		{
+			Color* ij = evaluateOnePixel(image, i, j);
+			result->image[i][j] = *ij;
+			free(ij);
+		}
+	}
+	return result;
 }
 
 /*
@@ -45,5 +71,10 @@ Make sure to free all memory before returning!
 */
 int main(int argc, char **argv)
 {
-	//YOUR CODE HERE
+	Image *image = readData(argv[1]);
+	Image *result = steganography(image);
+	writeData(result);
+	freeImage(result);
+	freeImage(image);
+	return 0;
 }

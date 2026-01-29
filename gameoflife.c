@@ -22,14 +22,70 @@
 //and the left column as adjacent to the right column.
 Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule)
 {
-	//YOUR CODE HERE
+	Color* newColor = (Color*)malloc(sizeof(Color));
+	int rows = image->rows;
+	int cols = image->cols;
+	int activeNeighbours = 0;
+
+	int neighbours[8][2] = {
+		{(row - 1 + rows) % rows, (col - 1 + cols) % cols},
+		{(row - 1 + rows) % rows, col},
+		{(row - 1 + rows) % rows, (col + 1) % cols},
+		{row, (col - 1 + cols) % cols},
+		{row, (col + 1) % cols},
+		{(row + 1) % rows, (col - 1 + cols) % cols},
+		{(row + 1) % rows, col},
+		{(row + 1) % rows, (col + 1) % cols}
+	};
+
+	for (int i = 0; i < 8; i++)
+	{
+		int neighbour_row = neighbours[i][0];
+		int neighbour_col = neighbours[i][1];
+
+		if (image->image[neighbour_row][neighbour_col].R == 255)
+		{
+			activeNeighbours++;
+		}
+	}
+
+	int current_state = (image->image[row][col].R == 255) ? 1 : 0;
+	int new_state = (rule >> (current_state * 9 + activeNeighbours)) & 1;
+
+	if (new_state == 1)
+	{
+		newColor->R = newColor->B = newColor->G = 255;
+	} else
+	{
+		newColor->R = newColor->G = newColor->B = 0;
+	}
+
+	return newColor;
 }
 
 //The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
 //You should be able to copy most of this from steganography.c
 Image *life(Image *image, uint32_t rule)
 {
-	//YOUR CODE HERE
+	Image *newImage = (Image*)malloc(sizeof(Image));
+	newImage->rows = image->rows;
+	newImage->cols = image->cols;
+	newImage->image = (Color**)malloc(sizeof(Color*) * newImage->rows);
+	for (int i = 0; i < newImage->rows; i++)
+	{
+		newImage->image[i] = (Color*)malloc(sizeof(Color) * newImage->cols);
+	}
+
+	for (int i = 0; i < newImage->rows; i++)
+	{
+		for (int j = 0; j < newImage->cols; j++)
+		{
+			Color *ij = evaluateOneCell(image, i, j, rule);
+			newImage->image[i][j] = *ij;
+			free(ij);
+		}
+	}
+	return newImage;
 }
 
 /*
@@ -49,5 +105,25 @@ You may find it useful to copy the code from steganography.c, to start.
 */
 int main(int argc, char **argv)
 {
-	//YOUR CODE HERE
+	if (argc <= 2)
+	{
+		printf("usage: ./gameOfLife filename rule\nfilename is an ASCII PPM file (type P3) with maximum value 255.\nrule is a hex number beginning with 0x; Life is 0x1808.");
+		return -1;
+	}
+
+	char *filename = argv[1];
+	char *rule = argv[2];
+
+	char *endptr;
+	uint32_t rule_value = strtol(rule, &endptr, 16);
+	if (*endptr != '\0' || rule_value < 0x00000 || rule_value > 0x3FFFF)
+	{
+		return -1;
+	}
+	Image* image = readData(filename);
+	Image *newImage = life(image, rule_value);
+	writeData(newImage);
+	freeImage(image);
+	freeImage(newImage);
+	return 0;
 }
